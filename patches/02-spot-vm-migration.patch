@@ -1,0 +1,44 @@
+--- a/conf/gcp_params.config
++++ b/conf/gcp_params.config
+@@ -44,8 +44,10 @@ params {
+         Cost Optimization Settings
+     ============================================
+     */
+     
+-    // Use preemptible instances (can be interrupted but much cheaper)
+-    use_preemptible                   = true
++    // Use spot instances (can be interrupted but much cheaper)
++    // Note: Replaces deprecated preemptible instances
++    use_spot                          = true
++    use_preemptible                   = true  // Deprecated: kept for backward compatibility
+     
+     // Automatic scaling based on input size
+     auto_scale_resources              = true
+
+--- a/conf/profiles/gcb.config
++++ b/conf/profiles/gcb.config
+@@ -20,7 +20,7 @@ batch {
+     // Enable comprehensive logging
+     logsPolicy = 'ENABLED'
+     
+-    // Use spot instances for cost savings
+-    spot = params.use_preemptible ?: true
++    // Use spot instances for cost savings (replaces deprecated preemptible)
++    spot = params.use_spot ?: params.use_preemptible ?: true
+     
+     // Boot disk configuration
+     bootDiskSize = params.boot_disk_size ?: '20 GB'
+
+--- a/conf/profiles/gcp_minimal.config
++++ b/conf/profiles/gcp_minimal.config
+@@ -120,8 +120,8 @@ batch {
+     // Mount Google Cloud Storage buckets
+     volumes = params.batch_volumes ?: []
+     
+-    // Use spot instances for cost savings (equivalent to preemptible)
+-    spot = params.use_preemptible ?: true
++    // Use spot instances for cost savings (replaces deprecated preemptible)
++    spot = params.use_spot ?: params.use_preemptible ?: true
+     
+     // Boot disk configuration
+     bootDiskSize = params.boot_disk_size ?: '20 GB'

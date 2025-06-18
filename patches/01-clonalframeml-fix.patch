@@ -1,0 +1,118 @@
+--- a/modules/local/recombination_clonalframeml/main.nf
++++ b/modules/local/recombination_clonalframeml/main.nf
+@@ -2,7 +2,7 @@ process RECOMBINATION_CLONALFRAMEML {
+ 
+     tag { "${meta.snp_package}" }
+     label "process_medium"
+-    container "snads/clonalframeml@sha256:bc00db247195fdc6151793712a74cc9b272dc2c9f153bb0037415e387f15351e"
++    container "snads/clonalframeml:1.12"
+ 
+     input:
+     tuple val(meta), path(core_alignment_fasta)
+@@ -13,25 +13,85 @@ process RECOMBINATION_CLONALFRAMEML {
+     path(".command.{out,err}")
+     path("versions.yml")                         , emit: versions
+ 
+-    shell:
+-    '''
+-    # ClonalFrameML needs tree labels to not be surrounded by single quotes
+-    sed -i "s/'//g" "!{meta.snp_package}.tree"
++    script:
++    def prefix = "${meta.snp_package}-ClonalFrameML"
++    """
++    # Debug: List input files
++    echo "=== ClonalFrameML Debug Info ==="
++    echo "Working directory: \$(pwd)"
++    echo "Input files:"
++    ls -la
++    echo "Core alignment file: ${core_alignment_fasta}"
++    echo "Tree file expected: ${meta.snp_package}.tree"
++    echo "================================"
+ 
+-    ClonalFrameML \
+-      "!{meta.snp_package}.tree" \
+-      "!{core_alignment_fasta}" \
+-      "!{meta.snp_package}-ClonalFrameML"
++    # Validate input files exist
++    if [ ! -f "${core_alignment_fasta}" ]; then
++        echo "ERROR: Core alignment file ${core_alignment_fasta} not found"
++        exit 1
++    fi
+ 
+-    # Rename output file
+-    mv \
+-      "!{meta.snp_package}-ClonalFrameML.importation_status.txt" \
+-      "!{meta.snp_package}-ClonalFrameML.recombination_positions.txt"
++    if [ ! -f "${meta.snp_package}.tree" ]; then
++        echo "ERROR: Tree file ${meta.snp_package}.tree not found"
++        echo "Available files:"
++        ls -la *.tree 2>/dev/null || echo "No .tree files found"
++        exit 1
++    fi
+ 
+-    mv \
+-      "!{meta.snp_package}-ClonalFrameML.labelled_tree.newick" \
+-      "!{meta.snp_package}-ClonalFrameML.labelled_tree.tree"
++    # Validate tree file is not empty
++    if [ ! -s "${meta.snp_package}.tree" ]; then
++        echo "ERROR: Tree file ${meta.snp_package}.tree is empty"
++        exit 1
++    fi
++
++    echo "Tree file content preview:"
++    head -n 3 "${meta.snp_package}.tree"
++
++    # ClonalFrameML needs tree labels to not be surrounded by single quotes
++    echo "Cleaning tree file labels..."
++    sed -i "s/'//g" "${meta.snp_package}.tree"
++
++    echo "Starting ClonalFrameML analysis..."
++    echo "Command: ClonalFrameML ${meta.snp_package}.tree ${core_alignment_fasta} ${prefix}"
++    
++    # Add timeout and better error handling
++    timeout 4h ClonalFrameML \\
++      "${meta.snp_package}.tree" \\
++      "${core_alignment_fasta}" \\
++      "${prefix}" || {
++        exit_code=\$?
++        echo "ClonalFrameML failed with exit code: \$exit_code"
++        if [ \$exit_code -eq 124 ]; then
++            echo "ERROR: ClonalFrameML timed out after 4 hours"
++        fi
++        exit \$exit_code
++    }
++
++    echo "ClonalFrameML completed successfully"
++
++    # Validate output files were created
++    if [ ! -f "${prefix}.importation_status.txt" ]; then
++        echo "ERROR: Expected output file ${prefix}.importation_status.txt not created"
++        echo "ClonalFrameML output files:"
++        ls -la ${prefix}* 2>/dev/null || echo "No output files found"
++        exit 1
++    fi
++
++    if [ ! -f "${prefix}.labelled_tree.newick" ]; then
++        echo "ERROR: Expected output file ${prefix}.labelled_tree.newick not created"
++        echo "ClonalFrameML output files:"
++        ls -la ${prefix}* 2>/dev/null || echo "No output files found"
++        exit 1
++    fi
++
++    # Rename output files
++    echo "Renaming output files..."
++    mv "${prefix}.importation_status.txt" "${prefix}.recombination_positions.txt"
++    mv "${prefix}.labelled_tree.newick" "${prefix}.labelled_tree.tree"
++
++    echo "Final output files:"
++    ls -la ${prefix}*
+ 
+     cat <<-END_VERSIONS > versions.yml
+-    "!{task.process}":
+-        clonalframeml: $(ClonalFrameML -version | sed 's/^/    /')
++    "${task.process}":
++        clonalframeml: \$(ClonalFrameML -version 2>&1 | head -n1 | sed 's/^/    /' || echo "    version unknown")
+     END_VERSIONS
+-    '''
++    """
+ }

@@ -50,10 +50,8 @@ params {
     ============================================
     */
     
-    // Use spot instances (can be interrupted but much cheaper)
-    // Note: Replaces deprecated preemptible instances
-    use_spot                          = true
-    use_preemptible                   = true  // Deprecated: kept for backward compatibility
+    // Use preemptible instances (can be interrupted but much cheaper)
+    use_preemptible                   = true
     
     // Automatic scaling based on input size
     auto_scale_resources              = true

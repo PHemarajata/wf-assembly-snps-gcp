@@ -1,0 +1,74 @@
+--- a/README.md
++++ b/README.md
+@@ -10,7 +10,7 @@
+ 
+ ## 🚀 Key Optimizations
+ 
+-- **70-80% Cost Reduction** through preemptible instances and algorithm optimization
++- **70-80% Cost Reduction** through Spot instances and algorithm optimization
+ - **5-10x Faster Execution** with ClonalFrameML alternative to Gubbins
+ - **Enhanced Resource Management** with adaptive parameter selection
+ - **Comprehensive Debugging** with detailed logging and monitoring
+@@ -35,7 +35,7 @@ nextflow run bacterial-genomics/wf-assembly-snps-gcp \
+     --outdir gs://your-bucket/results/ \
+     --gcp_work_dir gs://your-bucket/nextflow_work \
+     --recombination clonalframeml \
+-    --use_preemptible true \
++    --use_spot true \
+     --estimated_genome_count 200 \
+     --max_estimated_cost 50.0
+ ```
+@@ -65,7 +65,7 @@ nextflow run bacterial-genomics/wf-assembly-snps-gcp \
+     --input gs://your-bucket/input/ \
+     --outdir gs://your-bucket/results/ \
+     --recombination clonalframeml \
+-    --use_preemptible true \
++    --use_spot true \
+     --estimated_genome_count 50 \
+     --max_estimated_cost 25.0
+ ```
+@@ -77,7 +77,7 @@ nextflow run bacterial-genomics/wf-assembly-snps-gcp \
+     --input gs://your-bucket/input/ \
+     --outdir gs://your-bucket/results/ \
+     --recombination clonalframeml \
+-    --use_preemptible true \
++    --use_spot true \
+     --estimated_genome_count 200 \
+     --max_estimated_cost 75.0
+ ```
+@@ -89,7 +89,7 @@ nextflow run bacterial-genomics/wf-assembly-snps-gcp \
+     --input gs://your-bucket/input/ \
+     --outdir gs://your-bucket/results/ \
+     --recombination clonalframeml \
+-    --use_preemptible true \
++    --use_spot true \
+     --gubbins_cpus 8 \
+     --parsnp_cpus 8 \
+     --estimated_genome_count 500 \
+@@ -115,7 +115,7 @@ nextflow run bacterial-genomics/wf-assembly-snps-gcp \
+     --input gs://your-bucket/input/ \
+     --outdir gs://your-bucket/results/ \
+     --recombination clonalframeml \
+-    --use_preemptible true \
++    --use_spot true \
+     --monitor_resource_usage true \
+     --log_cost_estimates true \
+     --verbose_logging true
+@@ -130,7 +130,8 @@ nextflow run bacterial-genomics/wf-assembly-snps-gcp \
+ ## 🔧 GCP-Specific Parameters
+ 
+ ### Cost Control
+-- `--use_preemptible true` - Use 70% cheaper preemptible instances
++- `--use_spot true` - Use 70% cheaper Spot instances (replaces deprecated preemptible)
++- `--use_preemptible true` - Deprecated: use `--use_spot` instead (kept for backward compatibility)
+ - `--max_estimated_cost 100.0` - Budget limit in USD
+ - `--estimated_genome_count 200` - Help with cost estimation
+ 
+@@ -180,7 +181,8 @@ nextflow run bacterial-genomics/wf-assembly-snps-gcp \
+ ### Common Issues
+ 1. **Out of Memory**: Use `--recombination clonalframeml` or increase `--gubbins_memory`
+-2. **Preemption**: Jobs restart automatically, check logs for status
++2. **ClonalFrameML Hanging**: Fixed with enhanced error handling and timeout detection
++3. **Spot Instance Interruption**: Jobs restart automatically, check logs for status
+ 3. **Cost Overruns**: Set `--max_estimated_cost` and monitor billing
+ 4. **Slow Performance**: Enable `--monitor_resource_usage` to identify bottlenecks

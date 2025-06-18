@@ -1,0 +1,109 @@
+--- a/conf/profiles/gcb.config
++++ b/conf/profiles/gcb.config
+@@ -130,10 +130,35 @@ process {
+     
+     // ClonalFrameML optimization (alternative to Gubbins)
+     withName:RECOMBINATION_CLONALFRAMEML {
+-        cpus = 2
+-        memory = '8 GB'
+-        time = '4 h'
+-        machineType = 'e2-standard-2'
++        cpus = 4
++        memory = '16 GB'
++        time = '6 h'
++        machineType = 'e2-standard-4'
+         disk = '50 GB'
++        
++        // Enhanced retry strategy for ClonalFrameML
++        errorStrategy = { 
++            if (task.exitStatus == 124) {  // Timeout
++                log.warn "ClonalFrameML timeout for ${task.tag}, retrying with more time"
++                return 'retry'
++            } else if (task.exitStatus == 137) {  // Out of memory
++                log.warn "ClonalFrameML OOM detected for ${task.tag}, retrying with more memory"
++                return 'retry'
++            } else if (task.exitStatus in [1,2]) {  // General errors
++                log.warn "ClonalFrameML error for ${task.tag}, retrying"
++                return 'retry'
++            } else {
++                return 'finish'
++            }
++        }
++        maxRetries = 3
++        
++        // Resource scaling based on attempt
++        memory = { 
++            if (task.attempt == 1) {
++                '16 GB'
++            } else if (task.attempt == 2) {
++                '32 GB'
++            } else {
++                '64 GB'
++            }
++        }
++        
++        time = {
++            if (task.attempt == 1) {
++                '6 h'
++            } else if (task.attempt == 2) {
++                '8 h'
++            } else {
++                '12 h'
++            }
++        }
+     }
+
+--- a/conf/profiles/gcp_minimal.config
++++ b/conf/profiles/gcp_minimal.config
+@@ -90,10 +90,35 @@ process {
+     
+     // ClonalFrameML optimization (alternative to Gubbins)
+     withName:RECOMBINATION_CLONALFRAMEML {
+-        cpus = 2
+-        memory = '8 GB'
+-        time = '4 h'
+-        machineType = 'e2-standard-2'
++        cpus = 4
++        memory = '16 GB'
++        time = '6 h'
++        machineType = 'e2-standard-4'
+         disk = '50 GB'
++        
++        // Enhanced retry strategy for ClonalFrameML
++        errorStrategy = { 
++            if (task.exitStatus == 124) {  // Timeout
++                log.warn "ClonalFrameML timeout for ${task.tag}, retrying with more time"
++                return 'retry'
++            } else if (task.exitStatus == 137) {  // Out of memory
++                log.warn "ClonalFrameML OOM detected for ${task.tag}, retrying with more memory"
++                return 'retry'
++            } else if (task.exitStatus in [1,2]) {  // General errors
++                log.warn "ClonalFrameML error for ${task.tag}, retrying"
++                return 'retry'
++            } else {
++                return 'finish'
++            }
++        }
++        maxRetries = 3
++        
++        // Resource scaling based on attempt
++        memory = { 
++            if (task.attempt == 1) {
++                '16 GB'
++            } else if (task.attempt == 2) {
++                '32 GB'
++            } else {
++                '64 GB'
++            }
++        }
++        
++        time = {
++            if (task.attempt == 1) {
++                '6 h'
++            } else if (task.attempt == 2) {
++                '8 h'
++            } else {
++                '12 h'
++            }
++        }
+     }

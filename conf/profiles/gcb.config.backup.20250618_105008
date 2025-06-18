@@ -1,17 +1,93 @@
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Google Cloud Platform (GCP) Minimal VM Configuration
+    Google Cloud Batch (GCB) Configuration Profile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Optimized for cost-effective processing with minimal VMs
-    Uses Google Batch (replaces deprecated Life Sciences API)
-    Based on proven GCB configuration patterns
+    Based on proven production GCB configuration
+    Uses Google Batch executor with optimized settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
 // Process executor configuration
-process {
-    executor = 'google-batch'
+process.executor = 'google-batch'
+
+// Work directory - Google Cloud Storage bucket for staging
+workDir = params.gcp_work_dir ?: 'gs://your-bucket/nextflow_work'
+
+// Include base configuration
+includeConfig "../base.config"
+
+// Google Batch configuration
+batch {
+    // Mount Google Cloud Storage buckets
+    volumes = params.batch_volumes ?: []
     
+    // Enable comprehensive logging
+    logsPolicy = 'ENABLED'
+    
+    // Use spot instances for cost savings
+    spot = params.use_preemptible ?: true
+    
+    // Boot disk configuration
+    bootDiskSize = params.boot_disk_size ?: '20 GB'
+    bootDiskType = params.disk_type ?: 'pd-standard'
+    
+    // Network configuration
+    network = params.gcp_network ?: 'default'
+    subnetwork = params.gcp_subnetwork ?: null
+    usePrivateAddress = params.use_private_address ?: false
+    
+    // Service account
+    serviceAccountEmail = params.gcp_service_account ?: null
+    
+    // CPU platform (optional)
+    cpuPlatform = params.cpu_platform ?: null
+    
+    // Debugging
+    debug = params.debug_mode ?: false
+}
+
+// Google Cloud Platform settings
+google {
+    project = params.gcp_project ?: System.getenv('GOOGLE_CLOUD_PROJECT')
+    region = params.gcp_region ?: 'us-central1'
+    options = params.gcp_labels ?: '--labels=workflow=bacterial-genomics,env=prod'
+}
+
+// Container configuration
+docker {
+    enabled = true
+    fixOwnership = true
+    runOptions = '-u $(id -u):$(id -g)'
+}
+
+singularity {
+    enabled = false
+}
+
+// Enhanced logging and debugging
+trace {
+    enabled = true
+    overwrite = true
+    fields = 'task_id,hash,native_id,process,tag,name,status,exit,module,container,cpus,time,disk,memory,attempt,submit,start,complete,duration,realtime,queue,%cpu,%mem,rss,vmem,peak_rss,peak_vmem,rchar,wchar,syscr,syscw,read_bytes,write_bytes,env,workdir,script,scratch,error_action'
+}
+
+timeline {
+    enabled = true
+    overwrite = true
+}
+
+report {
+    enabled = true
+    overwrite = true
+}
+
+dag {
+    enabled = true
+    overwrite = true
+}
+
+// Process-specific optimizations for Google Batch
+process {
     // Default minimal resources for cost optimization
     cpus = { check_max( 2 * task.attempt, 'cpus' ) }
     memory = { check_max( 4.GB * task.attempt, 'memory' ) }
@@ -137,79 +213,6 @@ process {
         machineType = 'c2-standard-4'
         disk = '100 GB'
     }
-}
-
-// Google Cloud Platform configuration
-google {
-    project = params.gcp_project ?: System.getenv('GOOGLE_CLOUD_PROJECT')
-    region = params.gcp_region ?: 'us-central1'
-    options = params.gcp_labels ?: '--labels=workflow=bacterial-genomics,env=prod'
-}
-
-// Google Batch configuration
-batch {
-    // Enable comprehensive logging
-    logsPolicy = 'ENABLED'
-    
-    // Mount Google Cloud Storage buckets
-    volumes = params.batch_volumes ?: []
-    
-    // Use spot instances for cost savings (replaces deprecated preemptible)
-    spot = params.use_spot ?: params.use_preemptible ?: true
-    
-    // Boot disk configuration
-    bootDiskSize = params.boot_disk_size ?: '20 GB'
-    bootDiskType = params.disk_type ?: 'pd-standard'
-    
-    // Network configuration
-    network = params.gcp_network ?: 'default'
-    subnetwork = params.gcp_subnetwork ?: null
-    usePrivateAddress = params.use_private_address ?: false
-    
-    // Service account
-    serviceAccountEmail = params.gcp_service_account ?: null
-    
-    // CPU platform (optional)
-    cpuPlatform = params.cpu_platform ?: null
-    
-    // Debugging
-    debug = params.debug_mode ?: false
-}
-
-// Work directory configuration
-workDir = params.gcp_work_dir ?: 'gs://your-bucket/nextflow_work'
-
-// Container configuration
-docker {
-    enabled = true
-    fixOwnership = true
-    runOptions = '-u $(id -u):$(id -g)'
-}
-
-singularity {
-    enabled = false
-}
-
-// Enhanced logging and debugging
-trace {
-    enabled = true
-    overwrite = true
-    fields = 'task_id,hash,native_id,process,tag,name,status,exit,module,container,cpus,time,disk,memory,attempt,submit,start,complete,duration,realtime,queue,%cpu,%mem,rss,vmem,peak_rss,peak_vmem,rchar,wchar,syscr,syscw,read_bytes,write_bytes,vol_ctxt_swch,inv_ctxt_swch,env,workdir,script,scratch,error_action'
-}
-
-timeline {
-    enabled = true
-    overwrite = true
-}
-
-report {
-    enabled = true
-    overwrite = true
-}
-
-dag {
-    enabled = true
-    overwrite = true
 }
 
 // Workflow introspection and debugging

@@ -21,7 +21,7 @@ This document summarizes the GCP optimizations that have been added to the bacte
 ## 🚀 **Key Optimizations**
 
 ### 1. **Cost Reduction (70-80% savings)**
-- **Preemptible instances** (70% discount on compute)
+- **Spot instances** (70% discount on compute, replaces deprecated preemptible)
 - **Right-sized machine types** for each process
 - **ClonalFrameML alternative** to expensive Gubbins
 - **Cost monitoring and budget controls**
@@ -47,7 +47,7 @@ This document summarizes the GCP optimizations that have been added to the bacte
 
 ### After Optimization (200 genomes)
 - **ClonalFrameML**: $10-15 (1-2 hours)
-- **Other processes**: $15-20 (preemptible)
+- **Other processes**: $15-20 (Spot instances)
 - **Total**: $25-35 (70-80% savings)
 
 ## 🔧 **How to Access Your Optimized Pipeline**
@@ -64,7 +64,7 @@ nextflow run main.nf \
     --input gs://your-bucket/input/ \
     --outdir gs://your-bucket/results/ \
     --recombination clonalframeml \
-    --use_preemptible true
+    --use_spot true
 ```
 
 ### **Method 2: Apply Optimizations to Original**
@@ -179,7 +179,7 @@ nextflow run bacterial-genomics/wf-assembly-snps-gcp \
 
 ## 🎉 **Benefits Summary**
 
-1. **70-80% Cost Reduction** through preemptible instances and algorithm optimization
+1. **70-80% Cost Reduction** through Spot instances and algorithm optimization
 2. **5-10x Faster Execution** with ClonalFrameML alternative
 3. **Enhanced Reliability** with better error handling and retries
 4. **Comprehensive Monitoring** for debugging and cost control
