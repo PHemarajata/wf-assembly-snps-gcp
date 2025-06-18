@@ -96,46 +96,29 @@ process BUILD_PHYLOGENETIC_TREE_PARSNP {
     echo "Tree file preview:"
     head -n 3 "${tree_file}"
 
-    # Enhanced QC check with detailed logging
+    # Verify minimum required file size
     echo -e "Sample name\\tQC step\\tOutcome (Pass/Fail)" > "${qc_file}"
 
-    # Get actual file size in bytes
-    actual_size=\$(wc -c < "${tree_file}")
-    
-    # Parse minimum size (handle 'c' suffix for characters/bytes)
-    min_size_param="${params.min_tree_filesize}"
-    if [[ "\$min_size_param" =~ ^([0-9]+)c\$ ]]; then
-        min_size_bytes=\${BASH_REMATCH[1]}
-    elif [[ "\$min_size_param" =~ ^([0-9]+)\$ ]]; then
-        min_size_bytes=\$min_size_param
-    else
-        # Default to 50 bytes if parsing fails
-        min_size_bytes=50
-        echo "Warning: Could not parse min_tree_filesize '\$min_size_param', using default 50 bytes"
-    fi
-    
-    echo "QC Check Details:"
-    echo "  File: ${tree_file}"
-    echo "  Actual size: \$actual_size bytes"
-    echo "  Minimum required: \$min_size_bytes bytes"
-    echo "  Size parameter: \$min_size_param"
-    echo "  Size check: \$([ \$actual_size -gt \$min_size_bytes ] && echo "PASS" || echo "FAIL")"
+    if verify_minimum_file_size \\
+      "${tree_file}" \\
+      "Final ${meta.snp_package}-${meta.recombination} Tree Output" \\
+      "${params.min_tree_filesize}"; then
 
-    # Use a more reliable size check
-    if [ \$actual_size -gt \$min_size_bytes ]; then
-        echo -e "${meta.recombination}\\tFinal Tree Output\\tPASS" >> "${qc_file}"
-        echo "✅ QC PASS: Tree file meets minimum size requirement (\$actual_size > \$min_size_bytes bytes)"
-        echo "✅ Tree file will be published to output directory"
+      echo -e "${meta.recombination}\\tFinal Tree Output\\tPASS" >> "${qc_file}"
+      echo "QC PASS: Tree file meets minimum size requirement"
+
     else
-        echo -e "${meta.recombination}\\tFinal Tree Output\\tFAIL" >> "${qc_file}"
-        echo "❌ QC FAIL: Tree file too small (\$actual_size <= \$min_size_bytes bytes)"
-        echo "❌ Tree file will be removed and not published"
-        
-        # Only remove if it's actually too small
-        rm "${tree_file}"
+      msg "WARN: The following file did not pass the QC step: '${tree_file}'!"
+      msg "WARN: File size \$(wc -c < ${tree_file}) bytes is less than required ${params.min_tree_filesize}"
+
+      # Delete file to avoid it being copied to the publishDirectory
+      rm "${tree_file}"
+
+      echo -e "${meta.recombination}\\tFinal Tree Output\\tFAIL" >> "${qc_file}"
+      echo "QC FAIL: Tree file too small, removed"
     fi
 
-    echo "Final files in directory:"
+    echo "Final files:"
     ls -la *.tree *.tsv 2>/dev/null || echo "No tree or tsv files found"
 
     cat <<-END_VERSIONS > versions.yml
